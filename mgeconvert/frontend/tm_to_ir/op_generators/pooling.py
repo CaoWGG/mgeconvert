@@ -14,7 +14,7 @@ from megengine.traced_module.expr import CallFunction, CallMethod
 from megengine.utils.tuple_function import _pair, _pair_nonzero
 
 from ....converter_ir.ir_op import AdaptiveAvgPool2dOpr, AvgPool2dOpr, MaxPool2dOpr
-from ..tm_utils import get_logger
+from ..tm_utils import _convert_kwargs_to_args, get_logger
 from .base import OpGenBase, _register_op
 
 logger = get_logger(__name__)
@@ -46,13 +46,14 @@ class GenPool2dOpr(OpGenBase):
             self.padding = _pair(m.padding)
             op_cls = mode_map[type(m)]
         elif isinstance(expr, CallFunction):
-            self.kernel_size = _pair_nonzero(self.expr.args[1])
+            args, _ = _convert_kwargs_to_args(expr.func, expr.args, expr.kwargs)
+            self.kernel_size = _pair_nonzero(args[1])
             self.stride = self.kernel_size
             self.padding = (0, 0)
-            if len(self.expr.args) > 2:
-                self.stride = _pair_nonzero(self.expr.args[2])
-            if len(self.expr.args) > 3:
-                self.padding = _pair(self.expr.args[3])
+            if len(args) > 2 and args[2] is not None:
+                self.stride = _pair_nonzero(args[2])
+            if len(args) > 3 and args[3] is not None:
+                self.padding = _pair(args[3])
             op_cls = mode_map[expr.func]
         self.op = op_cls(self.kernel_size, self.stride, self.padding)
         self.add_opr_vars()
@@ -76,7 +77,8 @@ class GenAdaptiveAvgPool2dOpr(OpGenBase):
             m = expr.inputs[0].owner
             self.op = AdaptiveAvgPool2dOpr(m.oshp)
         elif isinstance(expr, CallFunction):
-            self.op = AdaptiveAvgPool2dOpr(expr.func.oshp)
+            args, _ = _convert_kwargs_to_args(expr.func, expr.args, expr.kwargs)
+            self.op = AdaptiveAvgPool2dOpr(args[1])
         self.add_opr_vars()
 
     def add_opr_vars(self):

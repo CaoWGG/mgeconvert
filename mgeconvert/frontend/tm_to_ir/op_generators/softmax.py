@@ -15,7 +15,7 @@ from megengine.traced_module.expr import CallFunction, CallMethod
 from mgeconvert.converter_ir.ir_tensor import IRTensor
 
 from ....converter_ir.ir_op import SoftmaxOpr
-from ..tm_utils import get_logger
+from ..tm_utils import _convert_kwargs_to_args, get_logger
 from .base import OpGenBase, _register_op
 
 logger = get_logger(__name__)
@@ -35,10 +35,10 @@ class GenSoftmaxOpr(OpGenBase):
             module = expr.inputs[0].owner
             self.axis = module.axis
         elif isinstance(self.expr, CallFunction):
-            if len(expr.const_val) == 1:
-                self.axis = expr.const_val
-            else:
-                self.axis = None
+            args, _ = _convert_kwargs_to_args(
+                F.softmax, self.expr.args, self.expr.kwargs
+            )
+            self.axis = args[1]
 
         self.op = SoftmaxOpr(self.axis)
         self.add_opr_vars()

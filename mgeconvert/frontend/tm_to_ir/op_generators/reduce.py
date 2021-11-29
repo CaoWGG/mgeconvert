@@ -12,7 +12,7 @@ import megengine.functional as F
 from megengine.traced_module.expr import CallFunction
 
 from ....converter_ir.ir_op import ReduceOpr
-from ..tm_utils import get_logger
+from ..tm_utils import _convert_kwargs_to_args, get_logger
 from .base import OpGenBase, _register_op
 
 logger = get_logger(__name__)
@@ -30,7 +30,8 @@ class GenReduceOpr(OpGenBase):
     def __init__(self, expr, irgraph) -> None:
         super().__init__(expr, irgraph)
         assert isinstance(self.expr, CallFunction)
-        self.axis = expr.kwargs["axis"]
+        args, _ = _convert_kwargs_to_args(expr.func, expr.args, expr.kwargs)
+        self.axis = args[1]
         self.mode = func_mode_map[expr.func]
         self.op = ReduceOpr(self.axis, self.mode, False)
         self.add_opr_vars()

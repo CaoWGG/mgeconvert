@@ -12,7 +12,7 @@ import megengine.functional as F
 from megengine.traced_module.expr import CallFunction, CallMethod
 
 from ....converter_ir.ir_op import RepeatOpr, ReshapeOpr
-from ..tm_utils import get_logger
+from ..tm_utils import _convert_kwargs_to_args, get_logger
 from .base import OpGenBase, _register_op
 
 logger = get_logger(__name__)
@@ -47,10 +47,9 @@ class GenRepeatOpr(OpGenBase):
     def __init__(self, expr, irgraph) -> None:
         super().__init__(expr, irgraph)
         assert isinstance(self.expr, CallFunction)
-        self.repeats = self.expr.args[1]
-        self.axis = None
-        if "axis" in self.expr.kwargs.keys():
-            self.axis = self.expr.kwargs["axis"]
+        args, _ = _convert_kwargs_to_args(F.repeat, expr.args, expr.kwargs)
+        self.repeats = args[1]
+        self.axis = args[2]
         self.op = RepeatOpr(self.repeats, self.axis)
         self.add_opr_vars()
 
